@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoalDay · 目标管理工作台</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #faf7f2;
+  --card-bg: #ffffff;
+  --text: #4a4a4a;
+  --text-secondary: #8a8a8a;
+  --border: #e8e0d8;
+  --primary: #c4a882;
+  --primary-light: #e8d5c0;
+  --accent-green: #a8c4a2;
+  --accent-pink: #d4a8a8;
+  --accent-blue: #a2b8c4;
+  --accent-orange: #d4b896;
+  --accent-purple: #b8a2c4;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --nav-height: 64px;
+  --sidebar-width: 220px;
+  --transition: 0.3s ease;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  transition: transform var(--transition);
+}
+
+.sidebar-logo {
+  padding: 0 20px 20px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.5px;
+}
+
+.sidebar-logo span { font-size: 13px; color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all var(--transition);
+  border-left: 3px solid transparent;
+  font-size: 15px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { background: var(--bg); color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
+.nav-item .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  padding: 24px 32px 100px;
+  max-width: 900px;
+  width: 100%;
+}
+
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* Bottom Nav (Mobile) */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  padding: 6px 0 env(safe-area-inset-bottom);
+  z-index: 100;
+  justify-content: space-around;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+  user-select: none;
+}
+
+.bottom-nav-item.active { color: var(--primary); font-weight: 600; }
+.bottom-nav-item .bn-icon { font-size: 20px; }
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+.btn-outline:hover { background: var(--primary); color: #fff; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg); border: 1px solid var(--border); cursor: pointer; font-size: 16px; transition: all var(--transition); }
+.btn-icon:hover { background: var(--primary-light); }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.tab {
+  padding: 8px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all var(--transition);
+  user-select: none;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+.tab.active { background: var(--card-bg); color: var(--primary); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Inputs */
+.input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  width: 100%;
+  transition: border var(--transition);
+  font-family: inherit;
+  background: var(--bg);
+}
+
+.input:focus { outline: none; border-color: var(--primary); }
+
+/* Habits Grid */
+.habits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+}
+
+.habit-dot {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  border: 2px solid transparent;
+  transition: all var(--transition);
+  background: var(--bg);
+  position: relative;
+}
+
+.habit-dot:hover { transform: scale(1.08); }
+.habit-dot.done { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+.habit-dot .habit-label { position: absolute; bottom: -22px; font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
+
+/* Pomodoro */
+.pomodoro-circle {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 6px solid var(--primary-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  transition: all var(--transition);
+}
+
+.pomodoro-circle.running { border-color: var(--primary); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(196,168,130,0.3); } 50% { box-shadow:0 0 0 16px rgba(196,168,130,0); } }
+
+.pomodoro-time { font-size: 48px; font-weight: 300; color: var(--text); letter-spacing: -1px; }
+
+/* Review Charts */
+.chart-container {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-container canvas { max-height: 220px; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  color: var(--text-secondary);
+  text-align: center;
+  min-height: 160px;
+}
+
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 8px; opacity: 0.6; }
+.empty-state .empty-text { font-size: 14px; line-height: 1.6; }
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  gap: 8px;
+}
+
+.loading-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal {
+  background: var(--card-bg);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+
+.modal h3 { margin-bottom: 16px; font-size: 18px; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(196,168,130,0.4);
+  z-index: 90;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab:hover { transform: scale(1.08); }
+
+/* Settings */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 14px; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 300;
+  animation: fadeInDown 0.3s ease;
+  pointer-events: none;
+}
+
+@keyframes fadeInDown { from { opacity:0; transform:translateX(-50%) translateY(-20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+/* Task List */
+.task-list { list-style: none; }
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.task-item:hover { background: var(--bg); border-color: var(--border); }
+.task-item.done .task-title { text-decoration: line-through; color: var(--text-secondary); }
+.task-check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+  font-size: 12px;
+}
+
+.task-check.done { background: var(--accent-green); border-color: var(--accent-green); color: #fff; }
+.task-title { flex:1; font-size: 14px; }
+.task-priority { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.task-priority.P0 { background: #fce4e4; color: #c44; }
+.task-priority.P1 { background: #fff3e0; color: #e6a23c; }
+.task-priority.P2 { background: #e3f2fd; color: #42a5f5; }
+
+/* Section Title */
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+/* Heatmap */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.heatmap-dot {
+  width: 12px; height: 12px; border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; padding: 16px 16px 100px; }
+  .bottom-nav { display: flex; }
+  .fab { bottom: 90px; right: 16px; }
+  .habits-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
+  .pomodoro-circle { width: 160px; height: 160px; }
+  .pomodoro-time { font-size: 36px; }
+}
+
+@media (min-width: 769px) {
+  .bottom-nav { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">GoalDay<span>目标管理</span></div>
+    <div class="nav-item active" data-page="todo"><span class="nav-icon">📋</span>待办</div>
+    <div class="nav-item" data-page="habits"><span class="nav-icon">✅</span>打卡</div>
+    <div class="nav-item" data-page="pomodoro"><span class="nav-icon">🍅</span>专注</div>
+    <div class="nav-item" data-page="review"><span class="nav-icon">📊</span>复盘</div>
+    <div class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span>设置</div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Todo Page -->
+    <div class="page active" id="page-todo">
+      <div class="section-title">📋 待办事项</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📥 收集箱</span>
+          <button class="btn btn-primary btn-sm" onclick="openTaskModal()">＋ 添加任务</button>
+        </div>
+        <ul class="task-list" id="inbox-list"></ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">✅ 今日清单</span>
+          <span style="font-size:13px;color:var(--text-secondary)">共 <span id="today-count">0</span> 项</span>
+        </div>
+        <ul class="task-list" id="today-list"></ul>
+        <div class="empty-state" id="today-empty" style="display:flex">
+          <div class="empty-icon">🌸</div>
+          <div class="empty-text">今天还没有任务哦<br>去收集箱添加一个吧</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Habits Page -->
+    <div class="page" id="page-habits">
+      <div class="section-title">✅ 习惯打卡</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📅 今日打卡</span>
+          <button class="btn btn-primary btn-sm" onclick="openHabitModal()">＋ 添加习惯</button>
+        </div>
+        <div class="habits-grid" id="habits-grid"></div>
+        <div class="empty-state" id="habits-empty" style="display:flex">
+          <div class="empty-icon">🌱</div>
+          <div class="empty-text">还没有添加习惯哦<br>点击上方按钮开始培养好习惯吧</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 本月打卡热力图</div>
+        <div class="heatmap-legend" style="margin-top:12px">
+          <span>0%</span><div class="heatmap-dot" style="background:#eee"></div>
+          <div class="heatmap-dot" style="background:var(--primary-light)"></div>
+          <div class="heatmap-dot" style="background:var(--primary)"></div>
+          <div class="heatmap-dot" style="background:#8b6f4e"></div><span>100%</span>
+        </div>
+        <div id="habits-heatmap" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- Pomodoro Page -->
+    <div class="page" id="page-pomodoro">
+      <div class="section-title">🍅 番茄专注</div>
+      <div class="card" style="text-align:center">
+        <div class="pomodoro-circle" id="pomodoro-circle">
+          <div class="pomodoro-time" id="pomodoro-display">25:00</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px" id="pomodoro-status">准备开始</div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;margin-bottom:16px">
+          <button class="btn btn-primary" id="pomodoro-start" onclick="togglePomodoro()">▶️ 开始专注</button>
+          <button class="btn btn-outline" onclick="resetPomodoro()">⏹ 重置</button>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;font-size:13px;color:var(--text-secondary)">
+          <span>⏱️ 专注 <b id="focus-min">25</b> min</span>
+          <span>☕ 休息 <b id="break-min">5</b> min</span>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-sm btn-outline" onclick="adjustPomodoro('focus')">调整专注时长</button>
+          <button class="btn btn-sm btn-outline" style="margin-left:8px" onclick="adjustPomodoro('break')">调整休息时长</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📝 今日专注记录</div>
+        <ul class="task-list" id="pomodoro-log"></ul>
+        <div class="empty-state" id="pomodoro-log-empty" style="display:flex">
+          <div class="empty-icon">🍅</div>
+          <div class="empty-text">今天还没有专注记录<br>开始一个番茄钟吧</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Page -->
+    <div class="page" id="page-review">
+      <div class="section-title">📊 数据复盘</div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="tabs" id="review-tabs">
+            <button class="tab active" data-period="week">周</button>
+            <button class="tab" data-period="month">月</button>
+            <button class="tab" data-period="year">年</button>
+          </div>
+          <button class="btn-icon" onclick="refreshReview()" title="刷新数据">↻</button>
+        </div>
+      </div>
+
+      <!-- 习惯打卡复盘 -->
+      <div class="card" id="review-habits-card">
+        <div class="card-title">✅ 习惯打卡复盘</div>
+        <div class="loading-state" id="review-habits-loading"><div class="loading-spinner"></div>加载中...</div>
+        <div class="chart-container" id="review-habits-chart" style="display:none">
+          <canvas id="habitsChart"></canvas>
+        </div>
+        <div class="empty-state" id="review-habits-empty" style="display:none">
+          <div class="empty-icon">📊</div>
+          <div class="empty-text">该周期暂时还没有记录哦，开始行动之后就会生成复盘数据✨</div>
+        </div>
+        <div class="empty-state" id="review-habits-error" style="display:none">
+          <div class="empty-icon">⚠️</div>
+          <div class="empty-text">读取数据异常，请尝试刷新页面✨</div>
+        </div>
+      </div>
+
+      <!-- 日程执行复盘 -->
+      <div class="card" id="review-tasks-card">
+        <div class="card-title">📋 日程执行复盘</div>
+        <div class="loading-state" id="review-tasks-loading"><div class="loading-spinner"></div>加载中...</div>
+        <div class="chart-container" id="review-tasks-chart" style="display:none">
+          <canvas id="tasksChart"></canvas>
+        </div>
+        <div class="empty-state" id="review-tasks-empty" style="display:none">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">该周期暂时还没有记录哦，开始行动之后就会生成复盘数据✨</div>
+        </div>
+        <div class="empty-state" id="review-tasks-error" style="display:none">
+          <div class="empty-icon">⚠️</div>
+          <div class="empty-text">读取数据异常，请尝试刷新页面✨</div>
+        </div>
+      </div>
+
+      <!-- 番茄专注复盘 -->
+      <div class="card" id="review-pomodoro-card">
+        <div class="card-title">🍅 番茄专注复盘</div>
+        <div class="loading-state" id="review-pomodoro-loading"><div class="loading-spinner"></div>加载中...</div>
+        <div class="chart-container" id="review-pomodoro-chart" style="display:none">
+          <canvas id="pomodoroChart"></canvas>
+        </div>
+        <div class="empty-state" id="review-pomodoro-empty" style="display:none">
+          <div class="empty-icon">🍅</div>
+          <div class="empty-text">该周期暂时还没有记录哦，开始行动之后就会生成复盘数据✨</div>
+        </div>
+        <div class="empty-state" id="review-pomodoro-error" style="display:none">
+          <div class="empty-icon">⚠️</div>
+          <div class="empty-text">读取数据异常，请尝试刷新页面✨</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="page" id="page-settings">
+      <div class="section-title">⚙️ 设置</div>
+      <div class="card">
+        <div class="card-title">💾 数据管理</div>
+        <div class="setting-row">
+          <span class="setting-label">导出备份</span>
+          <button class="btn btn-outline btn-sm" onclick="exportData()">💾 导出</button>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">恢复备份</span>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">📂 导入</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">清空所有数据</span>
+          <button class="btn btn-outline btn-sm" style="color:#c44;border-color:#c44" onclick="clearAllData()">🗑️ 清空</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🎨 主题配色</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <div class="habit-dot" style="width:36px;height:36px;background:#c4a882;cursor:pointer" onclick="setTheme('morandi')" title="莫兰迪"></div>
+          <div class="habit-dot" style="width:36px;height:36px;background:#f0c8b8;cursor:pointer" onclick="setTheme('macaron')" title="马卡龙"></div>
+          <div class="habit-dot" style="width:36px;height:36px;background:#a2c4b8;cursor:pointer" onclick="setTheme('matcha')" title="抹茶"></div>
+          <div class="habit-dot" style="width:36px;height:36px;background:#b8c4e8;cursor:pointer" onclick="setTheme('lavender')" title="薰衣草"></div>
+          <div class="habit-dot" style="width:36px;height:36px;background:#e8d5b8;cursor:pointer" onclick="setTheme('warm')" title="暖阳"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📖 关于</div>
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+          GoalDay · 目标管理工具 v1.0<br>
+          集习惯打卡 · 日程管理 · 番茄专注于一体<br>
+          莫兰迪奶油风 · 响应式设计 · 本地存储
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation (Mobile) -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-item active" data-page="todo"><span class="bn-icon">📋</span>待办</div>
+    <div class="bottom-nav-item" data-page="habits"><span class="bn-icon">✅</span>打卡</div>
+    <div class="bottom-nav-item" data-page="pomodoro"><span class="bn-icon">🍅</span>专注</div>
+    <div class="bottom-nav-item" data-page="review"><span class="bn-icon">📊</span>复盘</div>
+    <div class="bottom-nav-item" data-page="settings"><span class="bn-icon">⚙️</span>设置</div>
+  </nav>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="handleFab()" title="快速添加">＋</button>
+
+<!-- Modals -->
+<div class="modal-overlay" id="task-modal" style="display:none" onclick="if(event.target===this)closeTaskModal()">
+  <div class="modal">
+    <h3 id="task-modal-title">添加任务</h3>
+    <div class="form-group"><label>任务标题</label><input class="input" id="task-title" placeholder="输入任务内容..."></div>
+    <div class="form-group"><label>备注</label><input class="input" id="task-note" placeholder="可选备注"></div>
+    <div class="form-group"><label>优先级</label>
+      <select class="input" id="task-priority">
+        <option value="">无</option><option value="P0">P0 重要紧急</option><option value="P1">P1 重要不紧急</option>
+        <option value="P2">P2 紧急不重要</option><option value="P3">P3 不重要不紧急</option>
+      </select>
+    </div>
+    <div class="form-group"><label>标签（逗号分隔）</label><input class="input" id="task-tags" placeholder="例如：工作,学习"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-outline" onclick="closeTaskModal()">取消</button>
+      <button class="btn btn-primary" id="task-save-btn" onclick="saveTask()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="habit-modal" style="display:none" onclick="if(event.target===this)closeHabitModal()">
+  <div class="modal">
+    <h3>添加习惯</h3>
+    <div class="form-group"><label>习惯名称</label><input class="input" id="habit-name" placeholder="例如：早起、阅读..."></div>
+    <div class="form-group"><label>图标 Emoji</label><input class="input" id="habit-icon" placeholder="例如：🏃" maxlength="2"></div>
+    <div class="form-group"><label>标识色</label><input type="color" class="input" id="habit-color" value="#c4a882" style="height:40px;padding:4px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-outline" onclick="closeHabitModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveHabit()">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pomodoro-modal" style="display:none" onclick="if(event.target===this)closePomodoroModal()">
+  <div class="modal">
+    <h3 id="pomodoro-modal-title">调整时长</h3>
+    <div class="form-group"><label id="pomodoro-modal-label">时长（分钟）</label>
+      <input type="number" class="input" id="pomodoro-modal-value" min="1" max="120" value="25">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-outline" onclick="closePomodoroModal()">取消</button>
+      <button class="btn btn-primary" onclick="savePomodoroSetting()">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DATA STORE ============
+const STORAGE_KEY = 'goalday_data';
+
+function getDefaultData() {
+  return {
+    tasks: [],
+    habits: [],
+    habitLogs: {},     // { habitId: { '2026-08-02': true } }
+    pomodoroLogs: [],   // [{ date:'2026-08-02', duration:25, taskName:'' }]
+    pomodoroSettings: { focusMinutes: 25, breakMinutes: 5 },
+    theme: 'morandi',
+    currentPeriod: 'week'
+  };
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return getDefaultData();
+    return { ...getDefaultData(), ...JSON.parse(raw) };
+  } catch (e) {
+    console.error('数据读取失败:', e);
+    return getDefaultData();
+  }
+}
+
+function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    showToast('保存失败，存储空间不足');
+  }
+}
+
+let appData = loadData();
+
+// ============ NAVIGATION ============
+let currentPage = 'todo';
+
+function navigateTo(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === page);
+  });
+  if (page === 'todo') renderTodo();
+  if (page === 'habits') renderHabits();
+  if (page === 'pomodoro') renderPomodoro();
+  if (page === 'review') renderReview();
+  if (page === 'settings') renderSettings();
+}
+
+document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(el => {
+  el.addEventListener('click', () => navigateTo(el.dataset.page));
+});
+
+// ============ TOAST ============
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.remove(); }, 2000);
+}
+
+// ============ FAB ============
+function handleFab() {
+  if (currentPage === 'todo') openTaskModal();
+  else if (currentPage === 'habits') openHabitModal();
+  else if (currentPage === 'pomodoro') togglePomodoro();
+  else navigateTo('todo');
+}
+
+// ============ TODO ============
+let editingTaskId = null;
+
+function renderTodo() {
+  const inboxList = document.getElementById('inbox-list');
+  const todayList = document.getElementById('today-list');
+  const todayEmpty = document.getElementById('today-empty');
+  const todayCount = document.getElementById('today-count');
+
+  const today = getToday();
+  const inboxTasks = appData.tasks.filter(t => !t.done && !t.dueDate);
+  const todayTasks = appData.tasks.filter(t => t.dueDate === today);
+
+  inboxList.innerHTML = inboxTasks.map(t => taskHTML(t)).join('') || '<div class="empty-state"><div class="empty-text">收集箱是空的，添加一些任务吧</div></div>';
+  todayList.innerHTML = todayTasks.map(t => taskHTML(t)).join('');
+  todayEmpty.style.display = todayTasks.length === 0 ? 'flex' : 'none';
+  todayCount.textContent = todayTasks.length;
+
+  // Bind check events
+  document.querySelectorAll('.task-check').forEach(el => {
+    el.addEventListener('click', (e) => { e.stopPropagation(); toggleTaskDone(el.dataset.id); });
+  });
+  document.querySelectorAll('.task-item').forEach(el => {
+    if (el.dataset.id) {
+      el.addEventListener('click', (e) => {
+        if (e.target.classList.contains('task-check')) return;
+        editTask(el.dataset.id);
+      });
+    }
+  });
+}
+
+function taskHTML(t) {
+  const prioClass = t.priority ? `task-priority ${t.priority}` : '';
+  const prioLabel = t.priority || '';
+  return `<li class="task-item${t.done?' done':''}" data-id="${t.id}">
+    <div class="task-check${t.done?' done':''}" data-id="${t.id}">${t.done?'✓':''}</div>
+    <span class="task-title">${escHtml(t.title)}</span>
+    ${prioLabel?`<span class="${prioClass}">${prioLabel}</span>`:''}
+  </li>`;
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function openTaskModal(taskId) {
+  editingTaskId = taskId || null;
+  document.getElementById('task-modal-title').textContent = taskId ? '编辑任务' : '添加任务';
+  document.getElementById('task-save-btn').textContent = taskId ? '更新' : '保存';
+  if (taskId) {
+    const t = appData.tasks.find(x => x.id === taskId);
+    if (t) {
+      document.getElementById('task-title').value = t.title;
+      document.getElementById('task-note').value = t.note || '';
+      document.getElementById('task-priority').value = t.priority || '';
+      document.getElementById('task-tags').value = (t.tags||[]).join(',');
+    }
+  } else {
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-note').value = '';
+    document.getElementById('task-priority').value = '';
+    document.getElementById('task-tags').value = '';
+  }
+  document.getElementById('task-modal').style.display = 'flex';
+}
+
+function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingTaskId = null; }
+
+function saveTask() {
+  const title = document.getElementById('task-title').value.trim();
+  if (!title) { showToast('请输入任务标题'); return; }
+  const note = document.getElementById('task-note').value.trim();
+  const priority = document.getElementById('task-priority').value;
+  const tags = document.getElementById('task-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+
+  if (editingTaskId) {
+    const t = appData.tasks.find(x => x.id === editingTaskId);
+    if (t) { Object.assign(t, { title, note, priority, tags }); }
+  } else {
+    appData.tasks.push({
+      id: 't_' + Date.now(),
+      title, note, priority, tags,
+      dueDate: getToday(),
+      done: false,
+      createdAt: new Date().toISOString()
+    });
+  }
+  saveData(appData);
+  closeTaskModal();
+  renderTodo();
+  showToast(editingTaskId ? '任务已更新' : '任务已添加');
+}
+
+function editTask(id) {
+  openTaskModal(id);
+}
+
+function toggleTaskDone(id) {
+  const t = appData.tasks.find(x => x.id === id);
+  if (t) { t.done = !t.done; saveData(appData); renderTodo(); }
+}
+
+// ============ HABITS ============
+function renderHabits() {
+  const grid = document.getElementById('habits-grid');
+  const empty = document.getElementById('habits-empty');
+  const heatmap = document.getElementById('habits-heatmap');
+
+  if (appData.habits.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'flex';
+  } else {
+    empty.style.display = 'none';
+    const today = getToday();
+    grid.innerHTML = appData.habits.map(h => {
+      const logKey = h.id + '_' + today;
+      const done = appData.habitLogs[logKey];
+      return `<div class="habit-dot${done?' done':''}" style="background:${done?h.color:''};cursor:pointer" 
+        data-habit="${h.id}" title="${h.name}">
+        ${h.icon||'✅'}
+        <span class="habit-label">${h.name}</span>
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('#habits-grid .habit-dot').forEach(el => {
+      el.addEventListener('click', () => {
+        const hid = el.dataset.habit;
+        const today = getToday();
+        const logKey = hid + '_' + today;
+        appData.habitLogs[logKey] = !appData.habitLogs[logKey];
+        saveData(appData);
+        renderHabits();
+        showToast(appData.habitLogs[logKey] ? '打卡成功！' : '已取消打卡');
+      });
+    });
+  }
+
+  // Heatmap
+  renderHabitHeatmap(heatmap);
+}
+
+function renderHabitHeatmap(container) {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  let html = '';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let total = 0, done = 0;
+    appData.habits.forEach(h => {
+      total++;
+      if (appData.habitLogs[h.id + '_' + dateStr]) done++;
+    });
+    const pct = total === 0 ? 0 : done / total;
+    let color = '#eee';
+    if (pct > 0) color = 'var(--primary-light)';
+    if (pct >= 0.34) color = 'var(--primary)';
+    if (pct >= 0.67) color = '#8b6f4e';
+    html += `<div style="width:24px;height:24px;border-radius:3px;background:${color};font-size:9px;display:flex;align-items:center;justify-content:center;color:#fff" title="${dateStr}: ${done}/${total}">${d}</div>`;
+  }
+  html += `<div style="font-size:11px;color:var(--text-secondary);margin-left:8px;display:flex;align-items:center">${year}年${month+1}月</div>`;
+  container.innerHTML = html;
+}
+
+function openHabitModal() {
+  document.getElementById('habit-name').value = '';
+  document.getElementById('habit-icon').value = '';
+  document.getElementById('habit-color').value = '#c4a882';
+  document.getElementById('habit-modal').style.display = 'flex';
+}
+
+function closeHabitModal() { document.getElementById('habit-modal').style.display = 'none'; }
+
+function saveHabit() {
+  const name = document.getElementById('habit-name').value.trim();
+  if (!name) { showToast('请输入习惯名称'); return; }
+  appData.habits.push({
+    id: 'h_' + Date.now(),
+    name,
+    icon: document.getElementById('habit-icon').value || '✅',
+    color: document.getElementById('habit-color').value
+  });
+  saveData(appData);
+  closeHabitModal();
+  renderHabits();
+  showToast('习惯已添加');
+}
+
+// ============ POMODORO ============
+let pomodoroTimer = null;
+let pomodoroSeconds = 0;
+let pomodoroRunning = false;
+let pomodoroIsBreak = false;
+let pomodoroAdjustTarget = 'focus';
+
+function renderPomodoro() {
+  document.getElementById('focus-min').textContent = appData.pomodoroSettings.focusMinutes;
+  document.getElementById('break-min').textContent = appData.pomodoroSettings.breakMinutes;
+  if (!pomodoroRunning) {
+    pomodoroSeconds = appData.pomodoroSettings.focusMinutes * 60;
+    updatePomodoroDisplay();
+  }
+  renderPomodoroLog();
+}
+
+function updatePomodoroDisplay() {
+  const m = Math.floor(pomodoroSeconds / 60);
+  const s = pomodoroSeconds % 60;
+  document.getElementById('pomodoro-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function togglePomodoro() {
+  if (pomodoroRunning) {
+    clearInterval(pomodoroTimer);
+    pomodoroTimer = null;
+    pomodoroRunning = false;
+    document.getElementById('pomodoro-start').textContent = '▶️ 开始专注';
+    document.getElementById('pomodoro-status').textContent = '已暂停';
+    document.getElementById('pomodoro-circle').classList.remove('running');
+  } else {
+    if (pomodoroSeconds === 0) pomodoroSeconds = appData.pomodoroSettings.focusMinutes * 60;
+    pomodoroRunning = true;
+    pomodoroIsBreak = false;
+    document.getElementById('pomodoro-start').textContent = '⏸️ 暂停';
+    document.getElementById('pomodoro-status').textContent = '专注中...';
+    document.getElementById('pomodoro-circle').classList.add('running');
+    pomodoroTimer = setInterval(() => {
+      pomodoroSeconds--;
+      updatePomodoroDisplay();
+      if (pomodoroSeconds <= 0) {
+        clearInterval(pomodoroTimer);
+        pomodoroTimer = null;
+        pomodoroRunning = false;
+        document.getElementById('pomodoro-circle').classList.remove('running');
+        // Log pomodoro
+        const dur = pomodoroIsBreak ? appData.pomodoroSettings.breakMinutes : appData.pomodoroSettings.focusMinutes;
+        if (!pomodoroIsBreak) {
+          appData.pomodoroLogs.push({
+            id: 'p_' + Date.now(),
+            date: getToday(),
+            duration: dur,
+            taskName: '',
+            createdAt: new Date().toISOString()
+          });
+          saveData(appData);
+        }
+        showToast(pomodoroIsBreak ? '休息结束！' : '番茄钟完成！🍅');
+        // Start break
+        if (!pomodoroIsBreak) {
+          pomodoroIsBreak = true;
+          pomodoroSeconds = appData.pomodoroSettings.breakMinutes * 60;
+          document.getElementById('pomodoro-status').textContent = '休息时间';
+          document.getElementById('pomodoro-start').textContent = '▶️ 开始休息';
+          updatePomodoroDisplay();
+          renderPomodoroLog();
+        } else {
+          pomodoroSeconds = appData.pomodoroSettings.focusMinutes * 60;
+          document.getElementById('pomodoro-status').textContent = '准备开始';
+          document.getElementById('pomodoro-start').textContent = '▶️ 开始专注';
+          updatePomodoroDisplay();
+        }
+      }
+    }, 1000);
+  }
+}
+
+function resetPomodoro() {
+  clearInterval(pomodoroTimer);
+  pomodoroTimer = null;
+  pomodoroRunning = false;
+  pomodoroIsBreak = false;
+  pomodoroSeconds = appData.pomodoroSettings.focusMinutes * 60;
+  document.getElementById('pomodoro-start').textContent = '▶️ 开始专注';
+  document.getElementById('pomodoro-status').textContent = '准备开始';
+  document.getElementById('pomodoro-circle').classList.remove('running');
+  updatePomodoroDisplay();
+}
+
+function adjustPomodoro(type) {
+  pomodoroAdjustTarget = type;
+  document.getElementById('pomodoro-modal-title').textContent = type === 'focus' ? '调整专注时长' : '调整休息时长';
+  document.getElementById('pomodoro-modal-label').textContent = type === 'focus' ? '专注时长（分钟）' : '休息时长（分钟）';
+  document.getElementById('pomodoro-modal-value').value = type === 'focus' ? appData.pomodoroSettings.focusMinutes : appData.pomodoroSettings.breakMinutes;
+  document.getElementById('pomodoro-modal').style.display = 'flex';
+}
+
+function closePomodoroModal() { document.getElementById('pomodoro-modal').style.display = 'none'; }
+
+function savePomodoroSetting() {
+  const val = parseInt(document.getElementById('pomodoro-modal-value').value) || 25;
+  if (pomodoroAdjustTarget === 'focus') appData.pomodoroSettings.focusMinutes = val;
+  else appData.pomodoroSettings.breakMinutes = val;
+  saveData(appData);
+  closePomodoroModal();
+  resetPomodoro();
+  renderPomodoro();
+  showToast('时长已更新');
+}
+
+function renderPomodoroLog() {
+  const today = getToday();
+  const logs = appData.pomodoroLogs.filter(l => l.date === today);
+  const container = document.getElementById('pomodoro-log');
+  const empty = document.getElementById('pomodoro-log-empty');
+  if (logs.length === 0) {
+    container.innerHTML = '';
+    empty.style.display = 'flex';
+  } else {
+    empty.style.display = 'none';
+    container.innerHTML = logs.map(l => `<li class="task-item">
+      <span>🍅</span><span class="task-title">专注 ${l.duration} 分钟</span>
+      <span style="font-size:11px;color:var(--text-secondary)">${l.taskName||''}</span>
+    </li>`).join('');
+  }
+}
+
+// ============ REVIEW (核心修复) ============
+let reviewPeriod = 'week';
+let habitsChartInstance = null;
+let tasksChartInstance = null;
+let pomodoroChartInstance = null;
+
+function getDateRange(period) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate();
+  const dayOfWeek = now.getDay() || 7; // Sunday=7
+
+  if (period === 'week') {
+    const monday = new Date(year, month, day - dayOfWeek + 1);
+    const sunday = new Date(year, month, day - dayOfWeek + 7);
+    return { start: formatDate(monday), end: formatDate(sunday), labels: ['周一','周二','周三','周四','周五','周六','周日'] };
+  } else if (period === 'month') {
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    const labels = [];
+    for (let d=1; d<=daysInMonth; d++) labels.push(d+'日');
+    return { start: formatDate(new Date(year, month, 1)), end: formatDate(new Date(year, month, daysInMonth)), labels };
+  } else {
+    const labels = [];
+    for (let m=0; m<12; m++) labels.push((m+1)+'月');
+    return { start: formatDate(new Date(year, 0, 1)), end: formatDate(new Date(year, 11, 31)), labels };
+  }
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getToday() { return formatDate(new Date()); }
+
+function generateDaysInRange(start, end) {
+  const days = [];
+  const cur = new Date(start);
+  const endDate = new Date(end);
+  while (cur <= endDate) {
+    days.push(formatDate(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
+function generateWeeksInMonth(year, month) {
+  const weeks = [];
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month+1, 0);
+  let weekStart = new Date(firstDay);
+  weekStart.setDate(weekStart.getDate() - (weekStart.getDay()||7) + 1);
+  while (weekStart <= lastDay) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weeks.push({ start: formatDate(weekStart), end: formatDate(weekEnd) });
+    weekStart.setDate(weekStart.getDate() + 7);
+  }
+  return weeks;
+}
+
+function generateMonthsInYear() {
+  const year = new Date().getFullYear();
+  const months = [];
+  for (let m=0; m<12; m++) {
+    const firstDay = new Date(year, m, 1);
+    const lastDay = new Date(year, m+1, 0);
+    months.push({ start: formatDate(firstDay), end: formatDate(lastDay) });
+  }
+  return months;
+}
+
+// Show/hide review sub-sections safely
+function showReviewSection(prefix, mode) {
+  // mode: 'loading' | 'chart' | 'empty' | 'error'
+  try {
+    const loading = document.getElementById(`review-${prefix}-loading`);
+    const chart = document.getElementById(`review-${prefix}-chart`);
+    const empty = document.getElementById(`review-${prefix}-empty`);
+    const error = document.getElementById(`review-${prefix}-error`);
+    if (loading) loading.style.display = mode === 'loading' ? 'flex' : 'none';
+    if (chart) chart.style.display = mode === 'chart' ? 'flex' : 'none';
+    if (empty) empty.style.display = mode === 'empty' ? 'flex' : 'none';
+    if (error) error.style.display = mode === 'error' ? 'flex' : 'none';
+  } catch(e) {
+    console.error(`showReviewSection(${prefix}) 异常:`, e);
+  }
+}
+
+function renderReview() {
+  reviewPeriod = appData.currentPeriod || 'week';
+  // Update tab active state
+  document.querySelectorAll('#review-tabs .tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.period === reviewPeriod);
+  });
+  loadReviewData();
+}
+
+function loadReviewData() {
+  try {
+    // Show loading states for all three sections
+    showReviewSection('habits', 'loading');
+    showReviewSection('tasks', 'loading');
+    showReviewSection('pomodoro', 'loading');
+
+    const { start, end, labels } = getDateRange(reviewPeriod);
+
+    // Load each section independently
+    loadHabitsReview(start, end, labels);
+    loadTasksReview(start, end, labels);
+    loadPomodoroReview(start, end, labels);
+  } catch(e) {
+    console.error('loadReviewData 异常:', e);
+    // If the outer try fails, at least show error states for all
+    showReviewSection('habits', 'error');
+    showReviewSection('tasks', 'error');
+    showReviewSection('pomodoro', 'error');
+  }
+}
+
+function loadHabitsReview(start, end, labels) {
+  try {
+    if (appData.habits.length === 0) {
+      // No habits defined at all - show empty with chart (zeros)
+      renderHabitsReviewChart(labels, []);
+      showReviewSection('habits', 'chart');
+      return;
+    }
+
+    const days = generateDaysInRange(start, end);
+    let hasAnyData = false;
+    const datasets = appData.habits.map(h => {
+      const data = days.map(d => {
+        const key = h.id + '_' + d;
+        const val = appData.habitLogs[key] ? 1 : 0;
+        if (val) hasAnyData = true;
+        return val;
+      });
+      return {
+        label: h.name,
+        data,
+        borderColor: h.color,
+        backgroundColor: h.color + '33',
+        fill: false,
+        tension: 0.3,
+        pointRadius: 3
+      };
+    });
+
+    if (!hasAnyData) {
+      // Keep chart but with all zeros
+      const zeroDatasets = datasets.map(ds => ({...ds, data: ds.data.map(()=>0)}));
+      renderHabitsReviewChart(labels, zeroDatasets);
+      showReviewSection('habits', 'empty');
+    } else {
+      renderHabitsReviewChart(labels, datasets);
+      showReviewSection('habits', 'chart');
+    }
+  } catch(e) {
+    console.error('习惯打卡复盘异常:', e);
+    showReviewSection('habits', 'error');
+  }
+}
+
+function loadTasksReview(start, end, labels) {
+  try {
+    const completedTasks = appData.tasks.filter(t => {
+      return t.done && t.dueDate >= start && t.dueDate <= end;
+    });
+
+    let hasAnyData = false;
+    if (appData.tasks.length > 0) {
+      const tasksInRange = appData.tasks.filter(t => t.dueDate >= start && t.dueDate <= end);
+      if (tasksInRange.length > 0) hasAnyData = true;
+    }
+
+    if (!hasAnyData && completedTasks.length === 0) {
+      renderTasksReviewChart(labels, [0], [0]);
+      showReviewSection('tasks', 'empty');
+      return;
+    }
+
+    if (reviewPeriod === 'year') {
+      const months = generateMonthsInYear();
+      const monthLabels = months.map((_, i) => (i+1)+'月');
+      const doneByMonth = months.map(m => appData.tasks.filter(t => t.done && t.dueDate >= m.start && t.dueDate <= m.end).length);
+      const totalByMonth = months.map(m => appData.tasks.filter(t => t.dueDate >= m.start && t.dueDate <= m.end).length);
+      renderTasksReviewChart(monthLabels, doneByMonth, totalByMonth);
+    } else {
+      const days = generateDaysInRange(start, end);
+      const doneByDay = days.map(d => appData.tasks.filter(t => t.done && t.dueDate === d).length);
+      const totalByDay = days.map(d => appData.tasks.filter(t => t.dueDate === d).length);
+      renderTasksReviewChart(labels, doneByDay, totalByDay);
+    }
+
+    showReviewSection('tasks', 'chart');
+  } catch(e) {
+    console.error('日程执行复盘异常:', e);
+    showReviewSection('tasks', 'error');
+  }
+}
+
+function loadPomodoroReview(start, end, labels) {
+  try {
+    let logsInRange;
+    if (reviewPeriod === 'year') {
+      const year = new Date().getFullYear();
+      const months = generateMonthsInYear();
+      const monthLabels = months.map((_, i) => (i+1)+'月');
+      const data = months.map(m => {
+        return appData.pomodoroLogs.filter(l => l.date >= m.start && l.date <= m.end)
+          .reduce((sum, l) => sum + (l.duration||0), 0);
+      });
+      const hasAnyData = data.some(v => v > 0);
+      renderPomodoroReviewChart(monthLabels, data);
+      showReviewSection('pomodoro', hasAnyData ? 'chart' : 'empty');
+      return;
+    }
+
+    logsInRange = appData.pomodoroLogs.filter(l => l.date >= start && l.date <= end);
+    if (reviewPeriod === 'month') {
+      const weeks = generateWeeksInMonth(new Date().getFullYear(), new Date().getMonth());
+      const weekLabels = weeks.map((_, i) => `第${i+1}周`);
+      const data = weeks.map(w => {
+        return appData.pomodoroLogs.filter(l => l.date >= w.start && l.date <= w.end)
+          .reduce((sum, l) => sum + (l.duration||0), 0);
+      });
+      const hasAnyData = data.some(v => v > 0);
+      renderPomodoroReviewChart(weekLabels, data);
+      showReviewSection('pomodoro', hasAnyData ? 'chart' : 'empty');
+    } else {
+      const days = generateDaysInRange(start, end);
+      const data = days.map(d => {
+        return appData.pomodoroLogs.filter(l => l.date === d)
+          .reduce((sum, l) => sum + (l.duration||0), 0);
+      });
+      const hasAnyData = data.some(v => v > 0);
+      renderPomodoroReviewChart(labels, data);
+      showReviewSection('pomodoro', hasAnyData ? 'chart' : 'empty');
+    }
+  } catch(e) {
+    console.error('番茄专注复盘异常:', e);
+    showReviewSection('pomodoro', 'error');
+  }
+}
+
+function renderHabitsReviewChart(labels, datasets) {
+  const ctx = document.getElementById('habitsChart').getContext('2d');
+  destroyChartSafely('habitsChartInstance');
+  habitsChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: datasets.length > 0 ? datasets : [{ label:'暂无数据', data:labels.map(()=>0), borderColor:'#ccc', backgroundColor:'#ccc33', fill:false, tension:0.3 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } },
+      scales: {
+        y: { beginAtZero: true, max: 1, ticks: { stepSize: 1, callback: v => v===1?'✓':'✗' }, grid: { color: '#f0ebe4' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderTasksReviewChart(labels, doneData, totalData) {
+  const ctx = document.getElementById('tasksChart').getContext('2d');
+  destroyChartSafely('tasksChartInstance');
+  tasksChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '已完成', data: doneData, backgroundColor: 'rgba(168,196,162,0.7)', borderColor: '#a8c4a2', borderWidth: 1, borderRadius: 4 },
+        { label: '总计', data: totalData, backgroundColor: 'rgba(196,168,130,0.4)', borderColor: '#c4a882', borderWidth: 1, borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0ebe4' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderPomodoroReviewChart(labels, data) {
+  const ctx = document.getElementById('pomodoroChart').getContext('2d');
+  destroyChartSafely('pomodoroChartInstance');
+  pomodoroChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '专注时长(分钟)',
+        data,
+        backgroundColor: data.map(v => v>0 ? 'rgba(212,168,168,0.7)' : 'rgba(200,200,200,0.3)'),
+        borderColor: '#d4a8a8',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0ebe4' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function destroyChartSafely(instanceName) {
+  try {
+    if (instanceName === 'habitsChartInstance' && habitsChartInstance) { habitsChartInstance.destroy(); habitsChartInstance = null; }
+    if (instanceName === 'tasksChartInstance' && tasksChartInstance) { tasksChartInstance.destroy(); tasksChartInstance = null; }
+    if (instanceName === 'pomodoroChartInstance' && pomodoroChartInstance) { pomodoroChartInstance.destroy(); pomodoroChartInstance = null; }
+  } catch(e) {
+    console.error('销毁图表异常:', e);
+  }
+}
+
+function refreshReview() {
+  try {
+    destroyChartSafely('habitsChartInstance');
+    destroyChartSafely('tasksChartInstance');
+    destroyChartSafely('pomodoroChartInstance');
+    loadReviewData();
+    showToast('数据已刷新');
+  } catch(e) {
+    console.error('refreshReview 异常:', e);
+    showToast('刷新失败，请重试');
+  }
+}
+
+// Review tab switcher
+document.getElementById('review-tabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  reviewPeriod = tab.dataset.period;
+  appData.currentPeriod = reviewPeriod;
+  saveData(appData);
+
+  // Update active state
+  document.querySelectorAll('#review-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.period === reviewPeriod));
+
+  // Destroy charts and reload
+  try {
+    destroyChartSafely('habitsChartInstance');
+    destroyChartSafely('tasksChartInstance');
+    destroyChartSafely('pomodoroChartInstance');
+    loadReviewData();
+  } catch(e) {
+    console.error('Tab切换异常:', e);
+    showToast('切换失败，请重试');
+  }
+});
+
+// ============ SETTINGS ============
+function renderSettings() {}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'goalday-backup-' + getToday() + '.json';
+  a.click();
+  showToast('备份已导出');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.tasks !== undefined) {
+        appData = { ...getDefaultData(), ...data };
+        saveData(appData);
+        showToast('数据已恢复');
+        location.reload();
+      } else {
+        showToast('无效的备份文件');
+      }
+    } catch(err) {
+      showToast('文件解析失败');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (confirm('确定清空所有数据？此操作不可撤销！')) {
+    appData = getDefaultData();
+    saveData(appData);
+    showToast('数据已清空');
+    location.reload();
+  }
+}
+
+function setTheme(theme) {
+  appData.theme = theme;
+  saveData(appData);
+  const themes = {
+    morandi: { primary: '#c4a882', primaryLight: '#e8d5c0', bg: '#faf7f2' },
+    macaron: { primary: '#f0a8a8', primaryLight: '#fdd', bg: '#fff5f5' },
+    matcha: { primary: '#a2c4b8', primaryLight: '#d4ede4', bg: '#f5faf7' },
+    lavender: { primary: '#b8c4e8', primaryLight: '#dde4f8', bg: '#f5f6fa' },
+    warm: { primary: '#e8c8a0', primaryLight: '#f8e8d0', bg: '#fef9f2' }
+  };
+  const t = themes[theme] || themes.morandi;
+  document.documentElement.style.setProperty('--primary', t.primary);
+  document.documentElement.style.setProperty('--primary-light', t.primaryLight);
+  document.documentElement.style.setProperty('--bg', t.bg);
+  showToast('主题已切换');
+}
+
+// ============ INIT ============
+function init() {
+  // Apply saved theme
+  const themes = {
+    morandi: { primary: '#c4a882', primaryLight: '#e8d5c0', bg: '#faf7f2' },
+    macaron: { primary: '#f0a8a8', primaryLight: '#fdd', bg: '#fff5f5' },
+    matcha: { primary: '#a2c4b8', primaryLight: '#d4ede4', bg: '#f5faf7' },
+    lavender: { primary: '#b8c4e8', primaryLight: '#dde4f8', bg: '#f5f6fa' },
+    warm: { primary: '#e8c8a0', primaryLight: '#f8e8d0', bg: '#fef9f2' }
+  };
+  const t = themes[appData.theme] || themes.morandi;
+  document.documentElement.style.setProperty('--primary', t.primary);
+  document.documentElement.style.setProperty('--primary-light', t.primaryLight);
+  document.documentElement.style.setProperty('--bg', t.bg);
+
+  renderTodo();
+  // If starting on review page, render review
+  if (currentPage === 'review') renderReview();
+}
+
+init();
+</script>
+</body>
+</html>
